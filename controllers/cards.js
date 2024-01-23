@@ -1,5 +1,10 @@
+const mongoose = require('mongoose');
 const Card = require('../modules/card');
-const { BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR } = require('../utils/errors');
+const {
+  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, STATUS_CREATED,
+} = require('../utils/statuses');
+
+const { ValidationError, CastError } = mongoose.Error;
 
 const getCards = (req, res) => {
   Card.find({})
@@ -12,9 +17,9 @@ const createCard = (req, res) => {
     ...req.body,
     owner: req.user._id,
   })
-    .then((card) => res.status(201).send({ data: card }))
+    .then((card) => res.status(STATUS_CREATED).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof ValidationError) {
         res
           .status(BAD_REQUEST)
           .send({
@@ -30,31 +35,32 @@ const createCard = (req, res) => {
     });
 };
 
+const sendError = (err, res) => {
+  if (err instanceof ValidationError) {
+    res.status(BAD_REQUEST).send({
+      message: 'Переданы некорректные данные',
+    });
+  } else if (err.message === 'Not found') {
+    res.status(NOT_FOUND).send({
+      message: 'Элемент с указанным id не найден',
+    });
+  } else if (err instanceof CastError) {
+    res.status(BAD_REQUEST).send({
+      message: 'Введён некорректный id',
+    });
+  } else {
+    res.status(INTERNAL_SERVER_ERROR).send({
+      message: `Произошла ошибка ${err.name}: ${err.message}`,
+    });
+  }
+};
+
 const deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .orFail(() => new Error('Not found'))
-    .then((card) => res.send({ message: `Карточка ${card.name} удалена` }))
+    .orFail(new Error('Not found'))
+    .then(() => res.send({ message: 'Карточка удалена' }))
     .catch((err) => {
-      // eslint-disable-next-line no-constant-condition
-      if (err.name === 'CastError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные для удаления карточки',
-          });
-      } else if (err.message === 'Not found') {
-        res
-          .status(NOT_FOUND)
-          .send({
-            message: 'Карточка с указанным id не найдена',
-          });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({
-            message: `Произошла ошибка ${err.name}: ${err.message}`,
-          });
-      }
+      sendError(err, res);
     });
 };
 
@@ -67,28 +73,10 @@ const likeCard = (req, res) => {
     { $addToSet: { likes: userID } },
     { new: true },
   )
-    .orFail(() => new Error('Not found'))
-    .then((card) => res.status(201).send({ data: card }))
+    .orFail(new Error('Not found'))
+    .then((card) => res.status(STATUS_CREATED).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные для лайка',
-          });
-      } else if (err.message === 'Not found') {
-        res
-          .status(NOT_FOUND)
-          .send({
-            message: 'Передан несуществующий id карточки',
-          });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({
-            message: 'Серверная ошибка',
-          });
-      }
+      sendError(err, res);
     });
 };
 
@@ -96,37 +84,15 @@ const dislikeCard = (req, res) => {
   const userID = req.user._id;
   const { cardId } = req.params;
 
-  // eslint-disable-next-line no-console
-  console.log(cardId);
-
   Card.findByIdAndUpdate(
     cardId,
     { $pull: { likes: userID } },
     { new: true },
   )
-    .orFail(() => new Error('Not found'))
+    .orFail(new Error('Not found'))
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные для удаления лайка',
-          });
-        // eslint-disable-next-line no-constant-condition
-      } else if (err.name === 'Not found' || 'CastError') {
-        res
-          .status(NOT_FOUND)
-          .send({
-            message: 'Передан несуществующий id карточки',
-          });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({
-            message: `Произошла ошибка ${err.name}: ${err.message}`,
-          });
-      }
+      sendError(err, res);
     });
 };
 

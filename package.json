@@ -12,7 +12,6 @@
     "author": "annamolly888",
     "license": "ISC",
     "devDependencies": {
-        "body-parser": "^1.20.2",
         "eslint": "^8.42.0",
         "eslint-config-airbnb-base": "^15.0.0",
         "eslint-plugin-import": "^2.27.5",

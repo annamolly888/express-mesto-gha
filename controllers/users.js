@@ -1,5 +1,10 @@
+const mongoose = require('mongoose');
 const User = require('../modules/user');
-const { BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR } = require('../utils/errors');
+const {
+  BAD_REQUEST, NOT_FOUND, INTERNAL_SERVER_ERROR, STATUS_CREATED,
+} = require('../utils/statuses');
+
+const { ValidationError, CastError } = mongoose.Error;
 
 const getUsers = (req, res) => {
   User.find({})
@@ -11,9 +16,9 @@ const createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
-    .then((user) => res.send({ data: user }))
+    .then((user) => res.status(STATUS_CREATED).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err instanceof ValidationError) {
         res
           .status(BAD_REQUEST)
           .send({
@@ -40,7 +45,7 @@ const getUserById = (req, res) => {
           .send({
             message: 'Пользователь с таким id не найден',
           });
-      } else if (err.name === 'CastError') {
+      } else if (err instanceof CastError) {
         res
           .status(BAD_REQUEST)
           .send({
@@ -56,83 +61,44 @@ const getUserById = (req, res) => {
     });
 };
 
-const updateProfile = (req, res) => {
-  const userId = req.user._id;
-  const { name, about } = req.body;
-
-  User.findByIdAndUpdate(userId, { name, about }, {
-    new: true,
-    runValidators: true,
-  })
-    .orFail(() => new Error('Not found'))
-    .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные при обновлении профиля',
-          });
-      } else if (err.name === 'CastError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Передан некорректный id пользоателя',
-          });
-      } else if (err.name === 'Not found') {
-        res
-          .status(NOT_FOUND)
-          .send({
-            message: 'Пользователь с таким id не найден',
-          });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({
-            message: `Произошла ошибка ${err.name}: ${err.message}`,
-          });
-      }
+const sendError = (err, res) => {
+  if (err instanceof ValidationError) {
+    res.status(BAD_REQUEST).send({
+      message: 'Переданы некорректные данные',
     });
+  } else if (err.message === 'Not found') {
+    res.status(NOT_FOUND).send({
+      message: 'Пользователь с таким id не найден',
+    });
+  } else if (err instanceof CastError) {
+    res.status(BAD_REQUEST).send({
+      message: 'Введён некорректный id',
+    });
+  } else {
+    res.status(INTERNAL_SERVER_ERROR).send({
+      message: `Произошла ошибка ${err.name}: ${err.message}`,
+    });
+  }
+};
+
+const updateUser = (userId, updateBody) => User.findByIdAndUpdate(userId, updateBody, {
+  new: true,
+  runValidators: true,
+})
+  .orFail(new Error('Not found'));
+
+const updateProfile = (req, res) => {
+  const { name, about } = req.body;
+  updateUser(req.user._id, { name, about })
+    .then((user) => res.send({ data: user }))
+    .catch((err) => sendError(err, res));
 };
 
 const updateAvatar = (req, res) => {
-  const userId = req.user._id;
   const { avatar } = req.body;
-
-  User.findByIdAndUpdate(userId, { avatar }, {
-    new: true,
-    runValidators: true,
-  })
-    .orFail(() => new Error('Not found'))
+  updateUser(req.user._id, { avatar })
     .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Переданы некорректные данные при обновлении профиля',
-          });
-        // eslint-disable-next-line no-constant-condition
-      } else if (err.name === 'CastError') {
-        res
-          .status(BAD_REQUEST)
-          .send({
-            message: 'Передан некорректный id пользоателя',
-          });
-      } else if (err.name === 'Not found') {
-        res
-          .status(NOT_FOUND)
-          .send({
-            message: 'Пользователь с таким id не найден',
-          });
-      } else {
-        res
-          .status(INTERNAL_SERVER_ERROR)
-          .send({
-            message: `Произошла ошибка: ${err.message}`,
-          });
-      }
-    });
+    .catch((err) => sendError(err, res));
 };
 
 module.exports = {

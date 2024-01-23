@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const userRoutes = require('./users');
 const cardRoutes = require('./cards');
-const { NOT_FOUND } = require('../utils/errors');
+const { NOT_FOUND } = require('../utils/statuses');
 
 router.use('/users', userRoutes);
 router.use('/cards', cardRoutes);
