@@ -14,7 +14,7 @@ const createCard = (req, res) => {
   })
     .then((card) => res.status(201).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'CastError') {
+      if (err.name === 'ValidationError') {
         res
           .status(BAD_REQUEST)
           .send({
@@ -70,7 +70,7 @@ const likeCard = (req, res) => {
     .orFail(() => new Error('Not found'))
     .then((card) => res.status(201).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.name === 'CastError') {
         res
           .status(BAD_REQUEST)
           .send({
@@ -108,7 +108,7 @@ const dislikeCard = (req, res) => {
     .orFail(() => new Error('Not found'))
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.name === 'CastError') {
         res
           .status(BAD_REQUEST)
           .send({
