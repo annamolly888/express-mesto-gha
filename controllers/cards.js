@@ -76,8 +76,7 @@ const likeCard = (req, res) => {
           .send({
             message: 'Переданы некорректные данные для лайка',
           });
-      // eslint-disable-next-line no-constant-condition
-      } else if (err.name === 'Not found') {
+      } else if (err.message === 'Not found') {
         res
           .status(NOT_FOUND)
           .send({
@@ -87,7 +86,7 @@ const likeCard = (req, res) => {
         res
           .status(INTERNAL_SERVER_ERROR)
           .send({
-            message: `Произошла ошибка ${err.name}: ${err.message}`,
+            message: 'Серверная ошибка',
           });
       }
     });
