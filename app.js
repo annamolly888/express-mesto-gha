@@ -25,5 +25,5 @@ app.use(router);
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`Слушаю порт ${PORT}`);
+  console.log(`App listening ${PORT}`);
 });
