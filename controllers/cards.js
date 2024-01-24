@@ -36,17 +36,13 @@ const createCard = (req, res) => {
 };
 
 const sendError = (err, res) => {
-  if (err instanceof ValidationError) {
+  if (err instanceof CastError) {
     res.status(BAD_REQUEST).send({
-      message: 'Переданы некорректные данные',
+      message: 'Введён некорректный id',
     });
   } else if (err.message === 'Not found') {
     res.status(NOT_FOUND).send({
-      message: 'Элемент с указанным id не найден',
-    });
-  } else if (err instanceof CastError) {
-    res.status(BAD_REQUEST).send({
-      message: 'Введён некорректный id',
+      message: 'Карточка с указанным id не найдена',
     });
   } else {
     res.status(INTERNAL_SERVER_ERROR).send({
@@ -64,17 +60,19 @@ const deleteCard = (req, res) => {
     });
 };
 
+const updateCard = (cardId, updateBody) => Card.findByIdAndUpdate(cardId, updateBody, {
+  new: true,
+  runValidators: true,
+})
+  .orFail(new Error('Not found'));
+
 const likeCard = (req, res) => {
   const userID = req.user._id;
   const { cardId } = req.params;
+  const updateBody = { $addToSet: { likes: userID } };
 
-  Card.findByIdAndUpdate(
-    cardId,
-    { $addToSet: { likes: userID } },
-    { new: true },
-  )
-    .orFail(new Error('Not found'))
-    .then((card) => res.status(STATUS_CREATED).send({ data: card }))
+  updateCard(cardId, updateBody)
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
       sendError(err, res);
     });
@@ -83,13 +81,9 @@ const likeCard = (req, res) => {
 const dislikeCard = (req, res) => {
   const userID = req.user._id;
   const { cardId } = req.params;
+  const updateBody = { $pull: { likes: userID } };
 
-  Card.findByIdAndUpdate(
-    cardId,
-    { $pull: { likes: userID } },
-    { new: true },
-  )
-    .orFail(new Error('Not found'))
+  updateCard(cardId, updateBody)
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       sendError(err, res);

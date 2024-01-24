@@ -68,15 +68,12 @@ const sendError = (err, res) => {
     });
   } else if (err.message === 'Not found') {
     res.status(NOT_FOUND).send({
-      message: 'Пользователь с таким id не найден',
-    });
-  } else if (err instanceof CastError) {
-    res.status(BAD_REQUEST).send({
-      message: 'Введён некорректный id',
+      message: 'Объект с таким id не найден',
     });
   } else {
     res.status(INTERNAL_SERVER_ERROR).send({
       message: `Произошла ошибка ${err.name}: ${err.message}`,
+      error: err,
     });
   }
 };
