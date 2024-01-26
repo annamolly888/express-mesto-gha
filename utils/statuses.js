@@ -1,5 +1,7 @@
 const STATUS_CREATED = 201;
+const DUBLICATE_KEY = 11000;
 
 module.exports = {
+  DUBLICATE_KEY,
   STATUS_CREATED,
 };

@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../modules/user');
 const {
+  DUBLICATE_KEY,
   STATUS_CREATED,
 } = require('../utils/statuses');
 const NotFound = require('../errors/NotFound');
@@ -34,7 +35,7 @@ const createUser = (req, res, next) => {
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequest('Переданы некорректные данные при создании профиля'));
-      } else if (err.code === 11000) {
+      } else if (err.code === DUBLICATE_KEY) {
         next(new Conflict('Пользователь с таким Email уже зарегистрирован'));
       } else {
         next(err);
