@@ -1,13 +1,19 @@
 const router = require('express').Router();
-const userRoutes = require('./users');
-const cardRoutes = require('./cards');
-const { NOT_FOUND } = require('../utils/statuses');
+const { auth } = require('../middlewares/auth');
+const { login, createUser } = require('../controllers/users');
+const { signInValidation, signUpValidation } = require('../utils/validation');
+const NotFound = require('../errors/NotFound');
 
-router.use('/users', userRoutes);
-router.use('/cards', cardRoutes);
+router.use('/signin', signInValidation, login);
+router.use('/signup', signUpValidation, createUser);
 
-router.use('*', (req, res) => {
-  res.status(NOT_FOUND).send({ message: 'Такой ссылки не существует' });
+router.use(auth);
+
+router.use('/users', require('./users'));
+router.use('/cards', require('./cards'));
+
+router.use('/*', (req, res, next) => {
+  next(new NotFound('Такой ссылки не существует'));
 });
 
 module.exports = router;
