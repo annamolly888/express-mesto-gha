@@ -29,11 +29,11 @@ const createUser = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then(() => res.status(STATUS_CREATED).send({
+    .then(() => res.status(201).send({
       name, about, avatar, email,
     }))
     .catch((err) => {
-      if (err instanceof ValidationError) {
+      if (err.name === 'ValidationError') {
         next(new BadRequest('Переданы некорректные данные при создании профиля'));
       } else if (err.code === 11000) {
         next(new Conflict('Пользователь с таким Email уже зарегистрирован'));
