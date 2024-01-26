@@ -14,8 +14,7 @@ const Conflict = require('../errors/Conflict');
 const { ValidationError, CastError } = mongoose.Error;
 
 const getUsers = (req, res, next) => {
-  const userId = req.params.id;
-  User.findById(userId)
+  User.find({})
     .then((users) => res.send(users))
     .catch(next);
 };
@@ -29,7 +28,7 @@ const createUser = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then(() => res.status(201).send({
+    .then(() => res.status(STATUS_CREATED).send({
       name, about, avatar, email,
     }))
     .catch((err) => {
