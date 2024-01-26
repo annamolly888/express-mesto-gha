@@ -40,24 +40,27 @@ const sendError = (err, res, next) => {
   }
 };
 
-const deleteCard = async (req, res, next) => {
-  try {
-    const { cardId } = req.params;
-    const ownerId = req.user._id;
+const deleteCard = (req, res, next) => {
+  const { cardId } = req.params;
+  const ownerId = req.user._id;
 
-    const card = await Card.findById(cardId)
-      .orFail(() => new NotFound('Карточка с указанным id не найдена'));
-    if (!card.owner.equals(ownerId)) {
-      next(new Forbidden('Невозможно удалить карточку, созданную другим пользователем'));
-    }
-    Card.deleteOne(card)
-      .then(() => res.send({ message: `Карточка ${card.name} удалена` }));
-  } catch (err) {
-    if (err instanceof CastError) {
-      err.message = 'Переданы некорректные данные для удаления карточки';
-    }
-    sendError(err, res);
-  }
+  Card.findById(cardId)
+    .orFail(() => new NotFound('Карточка с указанным id не найдена'))
+    .then((card) => {
+      if (card.owner.equals(ownerId)) {
+        Card.deleteOne(card)
+          .then(() => res.send({ message: `Карточка ${card.name} удалена` }));
+      } else {
+        next(new Forbidden('Невозможно удалить карточку, созданную другим пользователем'));
+      }
+    })
+    .catch((err) => {
+      if (err instanceof CastError) {
+        next(new BadRequest('Переданы некорректные данные для удаления карточки'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const updateCard = (cardId, updateBody) => Card.findByIdAndUpdate(cardId, updateBody, {
