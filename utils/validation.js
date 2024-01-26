@@ -7,7 +7,7 @@ const regex = /https?:\/\/(www\.)?[-\w@:%\.\+~#=]{1,256}\.[a-z0-9()]{1,6}\b([-\w
 // getUserById
 const userIdValidation = celebrate({
   params: Joi.object().keys({
-    id: Joi.string().alphanum().min(24).hex(),
+    id: Joi.string().alphanum().length(24).hex(),
   }),
 });
 
@@ -56,7 +56,7 @@ const newCardValidation = celebrate({
 // deleteCard, likeCard, dislikeCard
 const cardIdValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().alphanum().min(24),
+    cardId: Joi.string().alphanum().length(24),
   }),
 });
 
